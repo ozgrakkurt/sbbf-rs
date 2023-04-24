@@ -1,0 +1,9 @@
+[package]
+name = "sbbf-rs"
+version = "0.0.1"
+edition = "2021"
+license = "MIT"
+description = "A split block bloom filter implementation ported to Rust"
+homepage = "https://github.com/ozgrakkurt/sbbf-rs"
+repository = "https://github.com/ozgrakkurt/sbbf-rs"
+authors = ["Ozgur Akkurt <oezgurmakkurt@gmail.com>"]
