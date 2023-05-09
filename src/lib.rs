@@ -66,6 +66,11 @@ impl Filter {
     pub unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u32) -> bool {
         self.inner.insert_unchecked(buf, len, hash)
     }
+
+    /// Returns a string indicating which internal filter implementation is being used
+    pub fn which(&self) -> &'static str {
+        self.inner.which()
+    }
 }
 
 trait FilterImpl {
