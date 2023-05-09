@@ -1,72 +1,80 @@
-#![no_std]
-
 mod arch;
-
-use arch::{contains, insert};
 
 const ALIGNMENT: usize = 32;
 const BUCKET_SIZE: usize = 32;
 
-pub struct FilterRef<'buf> {
-    log_num_buckets: u32,
-    directory_mask: u32,
-    buf: &'buf [u8],
+fn check_buf(buf: &[u8]) {
+    assert_eq!(buf.as_ptr().align_offset(ALIGNMENT), 0);
+    assert!(!buf.is_empty());
+    assert_eq!(buf.len() % BUCKET_SIZE, 0);
 }
 
-impl<'buf> FilterRef<'buf> {
-    pub fn new(buf: &'buf [u8]) -> Self {
-        assert_eq!(buf.as_ptr().align_offset(ALIGNMENT), 0);
-        assert!(!buf.is_empty());
-        assert_eq!(buf.len() % BUCKET_SIZE, 0);
+/// This struct gives an interface to filter methods
+pub struct Filter {
+    inner: Box<dyn FilterImpl>,
+}
 
-        let num_buckets = buf.len() / BUCKET_SIZE;
-        let log_num_buckets = num_buckets.ilog2();
-
-        let num_buckets: u32 = num_buckets.try_into().unwrap();
-        let directory_mask = num_buckets - 1;
-
+impl Filter {
+    /// Loads a cpu specific optimized implementation of a filter.
+    /// Doesn't allocate any memory as filter memory is supposed
+    /// to be provided by user in each function call
+    pub fn new() -> Self {
         Self {
-            buf,
-            log_num_buckets,
-            directory_mask,
+            inner: arch::load(),
         }
     }
 
-    pub fn contains(&self, hash: u32) -> bool {
-        unsafe { contains(self.buf, self.log_num_buckets, self.directory_mask, hash) }
+    /// Check if buf contains hash.
+    /// # Panics
+    /// Panics if the buffer isn't aligned to 32 bytes or
+    /// the buffer is empty or the size of the buffer isn't
+    /// a multiple of 32
+    pub fn contains(&self, buf: &[u8], hash: u32) -> bool {
+        check_buf(buf);
+        unsafe { self.inner.contains_unchecked(buf.as_ptr(), buf.len(), hash) }
     }
-}
 
-pub struct FilterMut<'buf> {
-    log_num_buckets: u32,
-    directory_mask: u32,
-    buf: &'buf mut [u8],
-}
-
-impl<'buf> FilterMut<'buf> {
-    pub fn new(buf: &'buf mut [u8]) -> Self {
-        assert_eq!(buf.as_ptr().align_offset(ALIGNMENT), 0);
-        assert!(!buf.is_empty());
-        assert_eq!(buf.len() % BUCKET_SIZE, 0);
-
-        let num_buckets = buf.len() / BUCKET_SIZE;
-        let log_num_buckets = num_buckets.ilog2();
-
-        let num_buckets: u32 = num_buckets.try_into().unwrap();
-        let directory_mask = num_buckets - 1;
-
-        Self {
-            buf,
-            log_num_buckets,
-            directory_mask,
+    /// Insert the hash into the buffer and return true
+    /// if it was already in the buffer.
+    /// # Panics
+    /// Panics if the buffer isn't aligned to 32 bytes or
+    /// the buffer is empty or the size of the buffer isn't
+    /// a multiple of 32
+    pub fn insert(&self, buf: &mut [u8], hash: u32) -> bool {
+        check_buf(buf);
+        unsafe {
+            self.inner
+                .insert_unchecked(buf.as_mut_ptr(), buf.len(), hash)
         }
     }
 
-    pub fn contains(&self, hash: u32) -> bool {
-        unsafe { contains(self.buf, self.log_num_buckets, self.directory_mask, hash) }
+    /// Check if buf contains hash.
+    /// # Safety
+    /// Caller should make sure the buffer is aligned to 32 bytes and
+    /// the buffer is non-empty and the size of the buffer is
+    /// a multiple of 32
+    pub unsafe fn contains_unchecked(&self, buf: *const u8, len: usize, hash: u32) -> bool {
+        self.inner.contains_unchecked(buf, len, hash)
     }
 
-    pub fn insert(&mut self, hash: u32) -> bool {
-        unsafe { insert(self.buf, self.log_num_buckets, self.directory_mask, hash) }
+    /// Insert the hash into the buffer and return true
+    /// if it was already in the buffer.
+    /// # Safety
+    /// Caller should make sure the buffer is aligned to 32 bytes and
+    /// the buffer is non-empty and the size of the buffer is
+    /// a multiple of 32
+    pub unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u32) -> bool {
+        self.inner.insert_unchecked(buf, len, hash)
+    }
+}
+
+trait FilterImpl {
+    unsafe fn contains_unchecked(&self, buf: *const u8, len: usize, hash: u32) -> bool;
+    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u32) -> bool;
+}
+
+impl Default for Filter {
+    fn default() -> Self {
+        Filter::new()
     }
 }
