@@ -29,7 +29,7 @@ impl Filter {
     /// Panics if the buffer isn't aligned to 32 bytes or
     /// the buffer is empty or the size of the buffer isn't
     /// a multiple of 32
-    pub fn contains(&self, buf: &[u8], hash: u32) -> bool {
+    pub fn contains(&self, buf: &[u8], hash: u64) -> bool {
         check_buf(buf);
         unsafe { self.inner.contains_unchecked(buf.as_ptr(), buf.len(), hash) }
     }
@@ -40,7 +40,7 @@ impl Filter {
     /// Panics if the buffer isn't aligned to 32 bytes or
     /// the buffer is empty or the size of the buffer isn't
     /// a multiple of 32
-    pub fn insert(&self, buf: &mut [u8], hash: u32) -> bool {
+    pub fn insert(&self, buf: &mut [u8], hash: u64) -> bool {
         check_buf(buf);
         unsafe {
             self.inner
@@ -53,7 +53,7 @@ impl Filter {
     /// Caller should make sure the buffer is aligned to 32 bytes and
     /// the buffer is non-empty and the size of the buffer is
     /// a multiple of 32
-    pub unsafe fn contains_unchecked(&self, buf: *const u8, len: usize, hash: u32) -> bool {
+    pub unsafe fn contains_unchecked(&self, buf: *const u8, len: usize, hash: u64) -> bool {
         self.inner.contains_unchecked(buf, len, hash)
     }
 
@@ -63,7 +63,7 @@ impl Filter {
     /// Caller should make sure the buffer is aligned to 32 bytes and
     /// the buffer is non-empty and the size of the buffer is
     /// a multiple of 32
-    pub unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u32) -> bool {
+    pub unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) -> bool {
         self.inner.insert_unchecked(buf, len, hash)
     }
 
@@ -74,8 +74,8 @@ impl Filter {
 }
 
 trait FilterImpl {
-    unsafe fn contains_unchecked(&self, buf: *const u8, len: usize, hash: u32) -> bool;
-    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u32) -> bool;
+    unsafe fn contains_unchecked(&self, buf: *const u8, len: usize, hash: u64) -> bool;
+    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) -> bool;
     fn which(&self) -> &'static str;
 }
 

@@ -7,3 +7,6 @@ description = "A split block bloom filter implementation ported to Rust"
 homepage = "https://github.com/ozgrakkurt/sbbf-rs"
 repository = "https://github.com/ozgrakkurt/sbbf-rs"
 authors = ["Ozgur Akkurt <oezgurmakkurt@gmail.com>"]
+
+[dependencies]
+fastrange-rs = "0.0.4"
