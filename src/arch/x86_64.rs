@@ -44,15 +44,13 @@ impl FilterImpl for Avx2Filter {
     }
     #[target_feature(enable = "avx2")]
     #[inline]
-    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) -> bool {
+    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) {
         let bucket_count = len / BUCKET_SIZE;
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, bucket_count as u32);
         let mask = self.make_mask(hash as u32);
         let bucket = core::mem::transmute::<_, *mut __m256i>(buf).add(bucket_idx as usize);
-        let res = _mm256_testc_si256(*bucket, mask) != 0;
         _mm256_store_si256(bucket, _mm256_or_si256(*bucket, mask));
-        res
     }
     fn which(&self) -> &'static str {
         "Avx2Filter"
@@ -99,16 +97,14 @@ impl FilterImpl for SseFilter {
     }
     #[target_feature(enable = "sse4.1")]
     #[inline]
-    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) -> bool {
+    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) {
         let bucket_count = len / SSE_BUCKET_SIZE;
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, bucket_count as u32);
         let mask = self.make_mask(hash as u32);
         let bucket = core::mem::transmute::<_, *mut __m128i>(buf).add(bucket_idx as usize);
         let bucketvalue = _mm_or_si128(*bucket, mask);
-        let res = _mm_testc_si128(*bucket, mask) != 0;
         _mm_storeu_si128(bucket, bucketvalue);
-        res
     }
     fn which(&self) -> &'static str {
         "SseFilter"

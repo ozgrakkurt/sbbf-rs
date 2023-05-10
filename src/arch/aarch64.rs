@@ -8,7 +8,7 @@ impl FilterImpl for NeonFilter {
         todo!()
     }
     #[target_feature(enable = "neon")]
-    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) -> bool {
+    unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) {
         todo!()
     }
     fn which(&self) -> &'static str {
