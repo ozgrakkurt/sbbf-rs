@@ -1,6 +1,6 @@
 mod arch;
 
-const ALIGNMENT: usize = 32;
+const ALIGNMENT: usize = 64;
 const BUCKET_SIZE: usize = 32;
 
 fn check_buf(buf: &[u8]) {
@@ -11,7 +11,7 @@ fn check_buf(buf: &[u8]) {
 
 /// This struct gives an interface to filter methods
 pub struct Filter {
-    inner: Box<dyn FilterImpl>,
+    inner: &'static dyn FilterImpl,
 }
 
 impl Filter {
@@ -26,7 +26,7 @@ impl Filter {
 
     /// Check if buf contains hash.
     /// # Panics
-    /// Panics if the buffer isn't aligned to 32 bytes or
+    /// Panics if the buffer isn't aligned to 64 bytes or
     /// the buffer is empty or the size of the buffer isn't
     /// a multiple of 32
     pub fn contains(&self, buf: &[u8], hash: u64) -> bool {
@@ -37,7 +37,7 @@ impl Filter {
     /// Insert the hash into the buffer and return true
     /// if it was already in the buffer.
     /// # Panics
-    /// Panics if the buffer isn't aligned to 32 bytes or
+    /// Panics if the buffer isn't aligned to 64 bytes or
     /// the buffer is empty or the size of the buffer isn't
     /// a multiple of 32
     pub fn insert(&self, buf: &mut [u8], hash: u64) -> bool {
@@ -50,7 +50,7 @@ impl Filter {
 
     /// Check if buf contains hash.
     /// # Safety
-    /// Caller should make sure the buffer is aligned to 32 bytes and
+    /// Caller should make sure the buffer is aligned to 64 bytes and
     /// the buffer is non-empty and the size of the buffer is
     /// a multiple of 32
     pub unsafe fn contains_unchecked(&self, buf: *const u8, len: usize, hash: u64) -> bool {
@@ -60,7 +60,7 @@ impl Filter {
     /// Insert the hash into the buffer and return true
     /// if it was already in the buffer.
     /// # Safety
-    /// Caller should make sure the buffer is aligned to 32 bytes and
+    /// Caller should make sure the buffer is aligned to 64 bytes and
     /// the buffer is non-empty and the size of the buffer is
     /// a multiple of 32
     pub unsafe fn insert_unchecked(&self, buf: *mut u8, len: usize, hash: u64) -> bool {

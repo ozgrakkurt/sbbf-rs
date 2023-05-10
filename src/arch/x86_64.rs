@@ -1,4 +1,4 @@
-use std::arch::x86_64::{
+use core::arch::x86_64::{
     __m128i, __m256i, _mm256_mullo_epi32, _mm256_or_si256, _mm256_set1_epi32, _mm256_setr_epi32,
     _mm256_sllv_epi32, _mm256_srli_epi32, _mm256_store_si256, _mm256_testc_si256, _mm_mulhi_epi16,
     _mm_or_si128, _mm_set1_epi32, _mm_set_epi8, _mm_setr_epi16, _mm_shuffle_epi8, _mm_storeu_si128,
