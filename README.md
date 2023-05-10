@@ -6,4 +6,4 @@
 
 Split block bloom filter implementation.
 
-Ported from the [fastfilter_cpp](https://github.com/FastFilter/fastfilter_cpp) repo.
+Implementation of [parquet bloom filter spec](https://github.com/apache/parquet-format/blob/master/BloomFilter.md).
