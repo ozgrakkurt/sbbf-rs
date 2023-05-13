@@ -1,14 +1,15 @@
 use rand::Rng;
 use sbbf_rs::{FilterFn, ALIGNMENT, BUCKET_SIZE};
 use std::{
-    alloc::{alloc, dealloc, Layout},
+    alloc::{alloc_zeroed, dealloc, Layout},
     collections::HashSet,
 };
 use xxhash_rust::xxh3::xxh3_64;
 
 fn run_test(bits_per_key: usize, max_fp: f64) {
-    let num_keys = 100_000;
+    let num_keys = 1_000_000;
     let mut filter = Filter::new(bits_per_key, num_keys);
+    let ref_filter = Filter::new(bits_per_key, num_keys);
     let mut rng = rand::thread_rng();
 
     let mut hashes = HashSet::with_capacity(num_keys);
@@ -19,10 +20,16 @@ fn run_test(bits_per_key: usize, max_fp: f64) {
         let hash = xxh3_64(i.to_be_bytes().as_ref());
         filter.insert(hash);
         hashes.insert(hash);
+        parquet2::bloom_filter::insert(
+            unsafe {
+                std::slice::from_raw_parts_mut(ref_filter.buf.ptr, ref_filter.buf.layout.size())
+            },
+            hash,
+        );
         assert!(filter.contains(hash));
     }
 
-    let num_fp_tests = 100_000usize;
+    let num_fp_tests = 1_000_000usize;
 
     let mut fp_count = 0;
     let mut p_count = 0;
@@ -50,6 +57,15 @@ fn run_test(bits_per_key: usize, max_fp: f64) {
 
     dbg!(fp_rate);
     assert!(fp_rate < max_fp);
+
+    let ref_slice =
+        unsafe { std::slice::from_raw_parts_mut(ref_filter.buf.ptr, ref_filter.buf.layout.size()) };
+
+    let slice = unsafe { std::slice::from_raw_parts_mut(filter.buf.ptr, filter.buf.layout.size()) };
+
+    if ref_slice != slice {
+        panic!("bytes don't match parquet2 filter");
+    }
 }
 
 #[test]
@@ -96,7 +112,7 @@ struct Buf {
 impl Buf {
     fn new(len: usize) -> Self {
         let layout = Layout::from_size_align(len, ALIGNMENT).unwrap();
-        let ptr = unsafe { alloc(layout) };
+        let ptr = unsafe { alloc_zeroed(layout) };
 
         Self { layout, ptr }
     }
