@@ -10,4 +10,7 @@ authors = ["Ozgur Akkurt <oezgurmakkurt@gmail.com>"]
 
 [dependencies]
 fastrange-rs = "0.0.4"
-cpufeatures = "0.2.7"
+cpufeatures = "0.2"
+
+[dev-dependencies]
+rand = "0.8"

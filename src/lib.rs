@@ -11,29 +11,28 @@ pub struct FilterFn {
 }
 
 impl FilterFn {
-    /// Loads a cpu specific optimized implementation of a filter.
-    /// Doesn't allocate any memory as filter memory is supposed
-    /// to be provided by user in each function call
+    /// Loads a cpu specific optimized implementation of a split block bloom filter.
+    /// Doesn't allocate any memory.
     pub fn new() -> Self {
         Self {
             inner: arch::load(),
         }
     }
 
-    /// num_buckets should be equal to length of the buffer divided by 32.
+    /// Check if filter bits in `buf` contain `hash`.
     /// # Safety
-    /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes and
-    /// the buffer is non-empty. The buffer should have a size of at least
-    /// `num_buckets` * [BUCKET_SIZE].
+    /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes.
+    /// The buffer should have a size of at least `num_buckets` * [BUCKET_SIZE].
+    /// `num_buckets` has to be bigger than zero.
     pub unsafe fn contains(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool {
         self.inner.contains(buf, num_buckets, hash)
     }
 
-    /// Insert the hash into the buffer
+    /// Insert `hash` into the filter bits inside `buf`.
     /// # Safety
-    /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes and
-    /// the buffer is non-empty. The buffer should have a size of at least
-    /// `num_buckets` * [BUCKET_SIZE].
+    /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes.
+    /// The buffer should have a size of at least `num_buckets` * [BUCKET_SIZE].
+    /// `num_buckets` has to be bigger than zero.
     pub unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
         self.inner.insert(buf, num_buckets, hash)
     }
