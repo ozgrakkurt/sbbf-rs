@@ -1,7 +1,7 @@
 use core::arch::x86_64::{
-    __m128i, __m256i, _mm256_mullo_epi32, _mm256_or_si256, _mm256_set1_epi32, _mm256_set_epi32,
+    __m128i, __m256i, _mm256_mullo_epi32, _mm256_or_si256, _mm256_set1_epi32, _mm256_setr_epi32,
     _mm256_sllv_epi32, _mm256_srli_epi32, _mm256_store_si256, _mm256_testc_si256, _mm_mullo_epi32,
-    _mm_or_si128, _mm_set1_epi32, _mm_set_epi32, _mm_sllv_epi32, _mm_srli_epi32, _mm_storeu_si128,
+    _mm_or_si128, _mm_set1_epi32, _mm_setr_epi32, _mm_sllv_epi32, _mm_srli_epi32, _mm_storeu_si128,
     _mm_testc_si128,
 };
 
@@ -14,7 +14,7 @@ impl Avx2Filter {
     #[target_feature(enable = "avx2")]
     #[inline]
     unsafe fn make_mask(&self, hash: u32) -> __m256i {
-        let salt = _mm256_set_epi32(
+        let salt = _mm256_setr_epi32(
             SALT[0] as i32,
             SALT[1] as i32,
             SALT[2] as i32,
@@ -62,13 +62,13 @@ impl SseFilter {
     #[inline]
     unsafe fn make_mask(&self, hash: u32) -> (__m128i, __m128i) {
         let salt = (
-            _mm_set_epi32(
+            _mm_setr_epi32(
                 SALT[0] as i32,
                 SALT[1] as i32,
                 SALT[2] as i32,
                 SALT[3] as i32,
             ),
-            _mm_set_epi32(
+            _mm_setr_epi32(
                 SALT[4] as i32,
                 SALT[5] as i32,
                 SALT[6] as i32,
