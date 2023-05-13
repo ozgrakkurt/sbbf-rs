@@ -49,17 +49,7 @@ impl FilterImpl for NeonFilter {
     }
     #[target_feature(enable = "neon")]
     #[inline]
-    unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
-        let bucket_idx =
-            fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
-        let mask = Self::make_mask(hash as u32);
-        let bucket = (buf as *mut uint32x4_t).add((bucket_idx * 2) as usize);
-        *bucket = vorrq_u32(*bucket, mask.0);
-        *bucket.add(1) = vorrq_u32(*bucket.add(1), mask.1);
-    }
-    #[target_feature(enable = "neon")]
-    #[inline]
-    unsafe fn check_and_insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
+    unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = Self::make_mask(hash as u32);

@@ -109,7 +109,7 @@ impl Filter {
     }
 
     fn insert(&mut self, hash: u64) {
-        unsafe { self.filter_fn.insert(self.buf.ptr, self.num_buckets, hash) }
+        unsafe { self.filter_fn.insert(self.buf.ptr, self.num_buckets, hash) };
     }
 }
 

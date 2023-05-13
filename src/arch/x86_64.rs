@@ -43,16 +43,7 @@ impl FilterImpl for Avx2Filter {
     }
     #[target_feature(enable = "avx2")]
     #[inline]
-    unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
-        let bucket_idx =
-            fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
-        let mask = self.make_mask(hash as u32);
-        let bucket = (buf as *mut __m256i).add(bucket_idx as usize);
-        _mm256_store_si256(bucket, _mm256_or_si256(*bucket, mask));
-    }
-    #[target_feature(enable = "avx2")]
-    #[inline]
-    unsafe fn check_and_insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
+    unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = self.make_mask(hash as u32);
@@ -106,17 +97,7 @@ impl FilterImpl for SseFilter {
     }
     #[target_feature(enable = "sse4.1")]
     #[inline]
-    unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
-        let bucket_idx =
-            fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
-        let mask = self.make_mask(hash as u32);
-        let bucket = (buf as *mut __m128i).add((bucket_idx * 2) as usize);
-        _mm_storeu_si128(bucket, _mm_or_si128(*bucket, mask.0));
-        _mm_storeu_si128(bucket.add(1), _mm_or_si128(*bucket.add(1), mask.1));
-    }
-    #[target_feature(enable = "sse4.1")]
-    #[inline]
-    unsafe fn check_and_insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
+    unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = self.make_mask(hash as u32);
