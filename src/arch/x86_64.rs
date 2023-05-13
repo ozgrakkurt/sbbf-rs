@@ -1,8 +1,8 @@
 use core::arch::x86_64::{
     __m128i, __m256i, _mm256_mullo_epi32, _mm256_or_si256, _mm256_set1_epi32, _mm256_set_epi32,
-    _mm256_sllv_epi32, _mm256_srli_epi32, _mm256_store_si256, _mm256_testz_si256, _mm_mullo_epi32,
+    _mm256_sllv_epi32, _mm256_srli_epi32, _mm256_store_si256, _mm256_testc_si256, _mm_mullo_epi32,
     _mm_or_si128, _mm_set1_epi32, _mm_set_epi32, _mm_sllv_epi32, _mm_srli_epi32, _mm_storeu_si128,
-    _mm_testz_si128,
+    _mm_testc_si128,
 };
 
 use super::SALT;
@@ -39,7 +39,7 @@ impl FilterImpl for Avx2Filter {
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = self.make_mask(hash as u32);
         let bucket = (buf as *const __m256i).add(bucket_idx as usize);
-        _mm256_testz_si256(*bucket, mask) == 0
+        _mm256_testc_si256(*bucket, mask) != 0
     }
     #[target_feature(enable = "avx2")]
     #[inline]
@@ -76,11 +76,7 @@ impl SseFilter {
             ),
         );
         let hash = _mm_set1_epi32(hash as i32);
-        let mut acc = (hash, hash);
-        acc = (
-            _mm_mullo_epi32(salt.0, acc.0),
-            _mm_mullo_epi32(salt.1, acc.1),
-        );
+        let mut acc = (_mm_mullo_epi32(salt.0, hash), _mm_mullo_epi32(salt.1, hash));
         acc = (_mm_srli_epi32(acc.0, 27), _mm_srli_epi32(acc.1, 27));
         let ones = _mm_set1_epi32(1);
         (_mm_sllv_epi32(ones, acc.0), _mm_sllv_epi32(ones, acc.1))
@@ -95,7 +91,7 @@ impl FilterImpl for SseFilter {
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = self.make_mask(hash as u32);
         let bucket = (buf as *const __m128i).add((bucket_idx * 2) as usize);
-        _mm_testz_si128(*bucket, mask.0) == 0 && _mm_testz_si128(*bucket.add(1), mask.1) == 0
+        _mm_testc_si128(*bucket, mask.0) != 0 && _mm_testc_si128(*bucket.add(1), mask.1) != 0
     }
     #[target_feature(enable = "sse4.1")]
     #[inline]

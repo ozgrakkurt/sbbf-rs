@@ -2,7 +2,7 @@
 
 mod arch;
 
-const ALIGNMENT: usize = 32;
+const ALIGNMENT: usize = 64;
 const BUCKET_SIZE: usize = 32;
 
 /// checks given buffer for alignment and size requirements
@@ -33,7 +33,7 @@ impl FilterFn {
 
     /// Check if buf contains hash.
     /// # Panics
-    /// Panics if the buffer isn't aligned to 32 bytes or
+    /// Panics if the buffer isn't aligned to 64 bytes or
     /// the buffer is empty or the size of the buffer isn't
     /// a multiple of 32
     pub fn contains(&self, buf: &[u8], hash: u64) -> bool {
@@ -47,7 +47,7 @@ impl FilterFn {
     /// Insert the hash into the buffer and return true
     /// if it was already in the buffer.
     /// # Panics
-    /// Panics if the buffer isn't aligned to 32 bytes or
+    /// Panics if the buffer isn't aligned to 64 bytes or
     /// the buffer is empty or the size of the buffer isn't
     /// a multiple of 32
     pub fn insert(&self, buf: &mut [u8], hash: u64) {
@@ -61,7 +61,7 @@ impl FilterFn {
     /// Check if buf contains hash.
     /// num_buckets should be equal to length of the buffer divided by 32.
     /// # Safety
-    /// Caller should make sure the buffer is aligned to 32 bytes and
+    /// Caller should make sure the buffer is aligned to 64 bytes and
     /// the buffer is non-empty and the size of the buffer is
     /// a multiple of 32
     pub unsafe fn contains_unchecked(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool {
@@ -72,7 +72,7 @@ impl FilterFn {
     /// if it was already in the buffer.
     /// num_buckets should be equal to length of the buffer divided by 32.
     /// # Safety
-    /// Caller should make sure the buffer is aligned to 32 bytes and
+    /// Caller should make sure the buffer is aligned to 64 bytes and
     /// the buffer is non-empty and the size of the buffer is
     /// a multiple of 32
     pub unsafe fn insert_unchecked(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
