@@ -20,23 +20,22 @@ impl FilterFn {
         }
     }
 
-    /// Check if buf contains hash.
     /// num_buckets should be equal to length of the buffer divided by 32.
     /// # Safety
     /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes and
     /// the buffer is non-empty. The buffer should have a size of at least
-    /// `num_buckets` * [BUCKET_SIZE]
+    /// `num_buckets` * [BUCKET_SIZE].
     pub unsafe fn contains(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool {
-        self.inner.contains_unchecked(buf, num_buckets, hash)
+        self.inner.contains(buf, num_buckets, hash)
     }
 
     /// Insert the hash into the buffer
     /// # Safety
     /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes and
     /// the buffer is non-empty. The buffer should have a size of at least
-    /// `num_buckets` * [BUCKET_SIZE]
-    pub unsafe fn insert_contains(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
-        self.inner.insert_unchecked(buf, num_buckets, hash)
+    /// `num_buckets` * [BUCKET_SIZE].
+    pub unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
+        self.inner.insert(buf, num_buckets, hash)
     }
 
     /// Returns a string indicating which internal filter implementation is being used
@@ -46,8 +45,8 @@ impl FilterFn {
 }
 
 trait FilterImpl {
-    unsafe fn contains_unchecked(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool;
-    unsafe fn insert_unchecked(&self, buf: *mut u8, num_buckets: usize, hash: u64);
+    unsafe fn contains(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool;
+    unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64);
     fn which(&self) -> &'static str;
 }
 
