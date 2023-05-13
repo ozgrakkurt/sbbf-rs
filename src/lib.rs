@@ -61,6 +61,7 @@ impl FilterFn {
     }
 
     /// Check if buf contains hash.
+    /// num_buckets should be equal to length of the buffer divided by 32.
     /// # Safety
     /// Caller should make sure the buffer is aligned to 32 bytes and
     /// the buffer is non-empty and the size of the buffer is
@@ -71,6 +72,7 @@ impl FilterFn {
 
     /// Insert the hash into the buffer and return true
     /// if it was already in the buffer.
+    /// num_buckets should be equal to length of the buffer divided by 32.
     /// # Safety
     /// Caller should make sure the buffer is aligned to 32 bytes and
     /// the buffer is non-empty and the size of the buffer is
