@@ -7,3 +7,16 @@
 Split block bloom filter implementation.
 
 Implementation of [parquet bloom filter spec](https://github.com/apache/parquet-format/blob/master/BloomFilter.md).
+
+## Features
+- Full runtime detection of cpu features, don't need to do `target-cpu=native` or manually turn on avx
+- All stable rust
+- Outputs same byte buffers on different systems. Completely cross-platform.
+- no_std support
+- relatively simple and low amount of code
+
+## Caveats
+- Only `unsafe` api
+- Dynamic dispatch to methods. (Not sure if this will effect performance so much)
+- Most people would want to use this through a safe wrapper that handles allocation and initialization.
+There is example code in `tests/mod.rs` for that kind of wrapper.
