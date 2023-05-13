@@ -16,8 +16,6 @@ fn check_buf(buf: &[u8]) -> usize {
     buf.len() / BUCKET_SIZE
 }
 
-pub struct FilterRef {}
-
 /// This struct gives an interface to filter methods
 pub struct FilterFn {
     inner: &'static dyn FilterImpl,
