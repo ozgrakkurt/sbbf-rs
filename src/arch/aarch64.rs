@@ -1,7 +1,7 @@
 use super::SALT;
 use core::arch::aarch64::{
-    uint32x4_t, vbicq_u32, vld1q_u32, vmulq_u32, vorrq_u32, vreinterpretq_s32_u32, vshlq_u32,
-    vshrq_n_u32, vst1q_u32,
+    uint32x4_t, vbicq_u32, vld1q_u32, vminvq_u32, vmulq_u32, vorrq_u32, vreinterpretq_s32_u32,
+    vshlq_u32, vshrq_n_u32,
 };
 
 use crate::FilterImpl;
@@ -22,27 +22,21 @@ impl NeonFilter {
             vshlq_u32(ones, vreinterpretq_s32_u32(acc.1)),
         )
     }
-
-    #[target_feature(enable = "neon")]
-    #[inline]
-    unsafe fn check(&self, bucket: uint32x4_t, mask: uint32x4_t) -> bool {
-        let an = vbicq_u32(mask, bucket);
-        let mut vals = [0, 0];
-        vst1q_u32(vals.as_mut_ptr(), an);
-        vals[0] != 0 && vals[1] != 0
-    }
 }
 
 impl FilterImpl for NeonFilter {
     #[target_feature(enable = "neon")]
+    #[inline]
     unsafe fn contains_unchecked(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = self.make_mask(hash as u32);
         let bucket = (buf as *const uint32x4_t).add((bucket_idx * 2) as usize);
-        self.check(*bucket, mask.0) && self.check(*bucket.add(1), mask.1)
+        vminvq_u32(vbicq_u32(*bucket, mask.0)) != 0
+            && vminvq_u32(vbicq_u32(*bucket.add(1), mask.1)) != 0
     }
     #[target_feature(enable = "neon")]
+    #[inline]
     unsafe fn insert_unchecked(&self, buf: *mut u8, num_buckets: usize, hash: u64) {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
