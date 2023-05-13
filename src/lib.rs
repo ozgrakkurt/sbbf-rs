@@ -37,6 +37,16 @@ impl FilterFn {
         self.inner.insert(buf, num_buckets, hash)
     }
 
+    /// Insert `hash` into the filter bits inside `buf`.
+    /// Returns true if filter bits in `buf` contain `hash`.
+    /// # Safety
+    /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes.
+    /// The buffer should have a size of at least `num_buckets` * [BUCKET_SIZE].
+    /// `num_buckets` has to be bigger than zero.
+    pub unsafe fn check_and_insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
+        self.inner.check_and_insert(buf, num_buckets, hash)
+    }
+
     /// Returns a string indicating which internal filter implementation is being used
     pub fn which(&self) -> &'static str {
         self.inner.which()
@@ -46,6 +56,8 @@ impl FilterFn {
 trait FilterImpl {
     unsafe fn contains(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool;
     unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64);
+    unsafe fn check_and_insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool;
+
     fn which(&self) -> &'static str;
 }
 

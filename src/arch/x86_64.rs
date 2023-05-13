@@ -50,6 +50,17 @@ impl FilterImpl for Avx2Filter {
         let bucket = (buf as *mut __m256i).add(bucket_idx as usize);
         _mm256_store_si256(bucket, _mm256_or_si256(*bucket, mask));
     }
+    #[target_feature(enable = "avx2")]
+    #[inline]
+    unsafe fn check_and_insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
+        let bucket_idx =
+            fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
+        let mask = self.make_mask(hash as u32);
+        let bucket = (buf as *mut __m256i).add(bucket_idx as usize);
+        let res = _mm256_testc_si256(*bucket, mask) != 0;
+        _mm256_store_si256(bucket, _mm256_or_si256(*bucket, mask));
+        res
+    }
     fn which(&self) -> &'static str {
         "Avx2Filter"
     }
@@ -102,6 +113,19 @@ impl FilterImpl for SseFilter {
         let bucket = (buf as *mut __m128i).add((bucket_idx * 2) as usize);
         _mm_storeu_si128(bucket, _mm_or_si128(*bucket, mask.0));
         _mm_storeu_si128(bucket.add(1), _mm_or_si128(*bucket.add(1), mask.1));
+    }
+    #[target_feature(enable = "sse4.1")]
+    #[inline]
+    unsafe fn check_and_insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
+        let bucket_idx =
+            fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
+        let mask = self.make_mask(hash as u32);
+        let bucket = (buf as *mut __m128i).add((bucket_idx * 2) as usize);
+        _mm_storeu_si128(bucket, _mm_or_si128(*bucket, mask.0));
+        let res =
+            _mm_testc_si128(*bucket, mask.0) != 0 && _mm_testc_si128(*bucket.add(1), mask.1) != 0;
+        _mm_storeu_si128(bucket.add(1), _mm_or_si128(*bucket.add(1), mask.1));
+        res
     }
     fn which(&self) -> &'static str {
         "SseFilter"
