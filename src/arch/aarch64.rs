@@ -7,14 +7,7 @@ impl NeonFilter {
     #[inline]
     unsafe fn make_mask(&self, hash: u32) -> __m256i {
         let salt = uint16x8_t(
-            SALT[0],
-            SALT[1],
-            SALT[2],
-            SALT[3],
-            SALT[4],
-            SALT[5],
-            SALT[6],
-            SALT[7],
+            SALT[0], SALT[1], SALT[2], SALT[3], SALT[4], SALT[5], SALT[6], SALT[7],
         );
         let mut acc = _mm256_set1_epi32(hash as i32);
         acc = _mm256_mullo_epi32(salt, acc);
