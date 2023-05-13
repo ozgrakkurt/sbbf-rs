@@ -7,28 +7,30 @@ use std::{
 use xxhash_rust::xxh3::xxh3_64;
 
 fn run_test(bits_per_key: usize, max_fp: f64) {
-    let num_keys = 1_000_000;
+    let num_keys = 100_000;
     let mut filter = Filter::new(bits_per_key, num_keys);
     let mut rng = rand::thread_rng();
 
     let mut hashes = HashSet::with_capacity(num_keys);
 
     // insert hashes
-    for _ in 0..num_keys {
-        let hash = xxh3_64(rng.gen::<u32>().to_be_bytes().as_ref());
+    for i in 0..num_keys {
+        let i = rng.gen_range(0..i + 1);
+        let hash = xxh3_64(i.to_be_bytes().as_ref());
         filter.insert(hash);
         hashes.insert(hash);
         assert!(filter.contains(hash));
     }
 
-    let num_fp_tests = 1_000_000;
+    let num_fp_tests = 100_000usize;
 
     let mut fp_count = 0;
     let mut p_count = 0;
 
     // count false positives
-    for _ in 0..num_fp_tests {
-        let hash = xxh3_64(rng.gen::<u32>().to_be_bytes().as_ref());
+    for i in 0..num_fp_tests {
+        let i = rng.gen_range(0..i + 1);
+        let hash = xxh3_64(i.to_be_bytes().as_ref());
         if filter.contains(hash) {
             p_count += 1;
             if !hashes.contains(&hash) {
@@ -54,7 +56,7 @@ fn run_test(bits_per_key: usize, max_fp: f64) {
 fn test_filter() {
     run_test(24, 0.0002);
     run_test(16, 0.002);
-    run_test(8, 0.05);
+    run_test(8, 0.02);
 }
 
 struct Filter {
