@@ -1,35 +1,34 @@
-use rand::distributions::{Distribution, Uniform};
+use rand::Rng;
 use sbbf_rs::{FilterFn, ALIGNMENT, BUCKET_SIZE};
-use std::{alloc::{alloc, dealloc, Layout}, collections::HashSet};
+use std::{
+    alloc::{alloc, dealloc, Layout},
+    collections::HashSet,
+};
+use xxhash_rust::xxh3::xxh3_64;
 
-#[test]
-fn test_filter() {
-    let num_hashes = u16::MAX as usize;
-    let mut filter = Filter::new(24, num_hashes);
-    let dist = Uniform::from(0..u32::MAX/2);
+fn run_test(bits_per_key: usize, max_fp: f64) {
+    let num_keys = 1_000_000;
+    let mut filter = Filter::new(bits_per_key, num_keys);
     let mut rng = rand::thread_rng();
 
-    let mut hashes = HashSet::with_capacity(num_hashes);
+    let mut hashes = HashSet::with_capacity(num_keys);
 
     // insert hashes
-    for _ in 0..num_hashes {
-        let hash = dist.sample(&mut rng) as u64;
+    for _ in 0..num_keys {
+        let hash = xxh3_64(rng.gen::<u32>().to_be_bytes().as_ref());
         filter.insert(hash);
         hashes.insert(hash);
         assert!(filter.contains(hash));
     }
 
-    let num_fp_tests = u16::MAX as usize;
+    let num_fp_tests = 1_000_000;
 
     let mut fp_count = 0;
     let mut p_count = 0;
 
-    let dist = Uniform::from(u32::MAX/2..u32::MAX);
-    let mut rng = rand::thread_rng();
-
     // count false positives
     for _ in 0..num_fp_tests {
-        let hash = dist.sample(&mut rng) as u64;
+        let hash = xxh3_64(rng.gen::<u32>().to_be_bytes().as_ref());
         if filter.contains(hash) {
             p_count += 1;
             if !hashes.contains(&hash) {
@@ -38,12 +37,24 @@ fn test_filter() {
         }
     }
 
+    for h in hashes {
+        assert!(filter.contains(h));
+    }
+
     dbg!(fp_count);
     dbg!(p_count);
 
     let fp_rate = fp_count as f64 / num_fp_tests as f64;
 
     dbg!(fp_rate);
+    assert!(fp_rate < max_fp);
+}
+
+#[test]
+fn test_filter() {
+    run_test(24, 0.0002);
+    run_test(16, 0.002);
+    run_test(8, 0.05);
 }
 
 struct Filter {
@@ -53,8 +64,8 @@ struct Filter {
 }
 
 impl Filter {
-    fn new(bits_per_hash: usize, num_hashes: usize) -> Self {
-        let len = (bits_per_hash / 8) * num_hashes;
+    fn new(bits_per_key: usize, num_keys: usize) -> Self {
+        let len = (bits_per_key / 8) * num_keys;
         let len = ((len + BUCKET_SIZE / 2) / BUCKET_SIZE) * BUCKET_SIZE;
         Self {
             filter_fn: FilterFn::new(),
@@ -64,7 +75,10 @@ impl Filter {
     }
 
     fn contains(&self, hash: u64) -> bool {
-        unsafe { self.filter_fn.contains(self.buf.ptr, self.num_buckets, hash) }
+        unsafe {
+            self.filter_fn
+                .contains(self.buf.ptr, self.num_buckets, hash)
+        }
     }
 
     fn insert(&mut self, hash: u64) {

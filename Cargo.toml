@@ -14,3 +14,4 @@ cpufeatures = "0.2"
 
 [dev-dependencies]
 rand = "0.8"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
