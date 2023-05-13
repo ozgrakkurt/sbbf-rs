@@ -38,6 +38,15 @@ fn run_test(bits_per_key: usize, max_fp: f64) {
     for i in 0..num_fp_tests {
         let i = rng.gen_range(0..i + 1);
         let hash = xxh3_64(i.to_be_bytes().as_ref());
+
+        let ref_slice =
+            unsafe { std::slice::from_raw_parts(ref_filter.buf.ptr, ref_filter.buf.layout.size()) };
+
+        assert_eq!(
+            filter.contains(hash),
+            parquet2::bloom_filter::is_in_set(ref_slice, hash)
+        );
+
         if filter.contains(hash) {
             p_count += 1;
             if !hashes.contains(&hash) {
@@ -59,9 +68,9 @@ fn run_test(bits_per_key: usize, max_fp: f64) {
     assert!(fp_rate < max_fp);
 
     let ref_slice =
-        unsafe { std::slice::from_raw_parts_mut(ref_filter.buf.ptr, ref_filter.buf.layout.size()) };
+        unsafe { std::slice::from_raw_parts(ref_filter.buf.ptr, ref_filter.buf.layout.size()) };
 
-    let slice = unsafe { std::slice::from_raw_parts_mut(filter.buf.ptr, filter.buf.layout.size()) };
+    let slice = unsafe { std::slice::from_raw_parts(filter.buf.ptr, filter.buf.layout.size()) };
 
     if ref_slice != slice {
         panic!("bytes don't match parquet2 filter");
