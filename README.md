@@ -16,7 +16,7 @@ Implementation of [parquet bloom filter spec](https://github.com/apache/parquet-
 - relatively simple and low amount of code
 
 ## Caveats
-- Only `unsafe` api
+- Only `unsafe` api. Safe API can be found at [sbbf-rs-safe](https://github.com/ozgrakkurt/sbbf-rs-safe).
 - Dynamic dispatch to methods. (Not sure if this will effect performance so much)
 - Most people would want to use this through a safe wrapper that handles allocation and initialization.
 There is example code in `tests/mod.rs` for that kind of wrapper.
