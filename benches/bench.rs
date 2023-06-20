@@ -4,14 +4,13 @@ use std::{
 };
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use probabilistic_collections::bloom::BloomFilter;
 use rand::RngCore;
 use sbbf_rs::{FilterFn, ALIGNMENT, BUCKET_SIZE};
-use xxhash_rust::xxh3::xxh3_64;
+
+mod parquet_impl;
 
 const NUM_KEYS: usize = 1_000_000;
 const BITS_PER_KEY: usize = 8;
-const FPP: f64 = 0.01;
 
 fn benchmark_insert(c: &mut Criterion) {
     c.bench_function("parquet2 insert", |b| {
@@ -26,10 +25,27 @@ fn benchmark_insert(c: &mut Criterion) {
             let num = rng.next_u64();
             let start = Instant::now();
             for _ in 0..iters {
-                black_box(parquet2::bloom_filter::insert(
-                    filter.as_mut(),
-                    xxh3_64(&num.to_be_bytes()),
-                ));
+                black_box(parquet2::bloom_filter::insert(filter.as_mut(), num));
+            }
+            start.elapsed()
+        })
+    });
+
+    c.bench_function("parquet insert", |b| {
+        let mut rng = rand::thread_rng();
+
+        let mut filter = Filter::new(BITS_PER_KEY, NUM_KEYS);
+        for _ in 0..NUM_KEYS {
+            parquet2::bloom_filter::insert(filter.as_mut(), rng.next_u64());
+        }
+
+        let mut filter = parquet_impl::Sbbf::new(filter.as_mut());
+
+        b.iter_custom(|iters| {
+            let num = rng.next_u64();
+            let start = Instant::now();
+            for _ in 0..iters {
+                black_box(filter.insert_hash(num));
             }
             start.elapsed()
         })
@@ -47,25 +63,7 @@ fn benchmark_insert(c: &mut Criterion) {
             let num = rng.next_u64();
             let start = Instant::now();
             for _ in 0..iters {
-                black_box(filter.insert(xxh3_64(&num.to_be_bytes())));
-            }
-            start.elapsed()
-        })
-    });
-
-    c.bench_function("prob-col insert", |b| {
-        let mut rng = rand::thread_rng();
-
-        let mut filter = BloomFilter::<u64>::new(NUM_KEYS, FPP);
-        for _ in 0..NUM_KEYS {
-            filter.insert(&rng.next_u64());
-        }
-
-        b.iter_custom(|iters| {
-            let num = rng.next_u64();
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(filter.insert(&num));
+                black_box(filter.insert(num));
             }
             start.elapsed()
         })
@@ -85,10 +83,27 @@ fn benchmark_contains(c: &mut Criterion) {
             let num = rng.next_u64();
             let start = Instant::now();
             for _ in 0..iters {
-                black_box(parquet2::bloom_filter::is_in_set(
-                    filter.as_mut(),
-                    xxh3_64(&num.to_be_bytes()),
-                ));
+                black_box(parquet2::bloom_filter::is_in_set(filter.as_mut(), num));
+            }
+            start.elapsed()
+        })
+    });
+
+    c.bench_function("parquet contains", |b| {
+        let mut rng = rand::thread_rng();
+
+        let mut filter = Filter::new(BITS_PER_KEY, NUM_KEYS);
+        for _ in 0..NUM_KEYS {
+            parquet2::bloom_filter::insert(filter.as_mut(), rng.next_u64());
+        }
+
+        let filter = parquet_impl::Sbbf::new(filter.as_mut());
+
+        b.iter_custom(|iters| {
+            let num = rng.next_u64();
+            let start = Instant::now();
+            for _ in 0..iters {
+                black_box(filter.check_hash(num));
             }
             start.elapsed()
         })
@@ -106,25 +121,7 @@ fn benchmark_contains(c: &mut Criterion) {
             let num = rng.next_u64();
             let start = Instant::now();
             for _ in 0..iters {
-                black_box(filter.contains(xxh3_64(&num.to_be_bytes())));
-            }
-            start.elapsed()
-        })
-    });
-
-    c.bench_function("prob-col contains", |b| {
-        let mut rng = rand::thread_rng();
-
-        let mut filter = BloomFilter::<u64>::new(NUM_KEYS, FPP);
-        for _ in 0..NUM_KEYS {
-            filter.insert(&rng.next_u64());
-        }
-
-        b.iter_custom(|iters| {
-            let num = rng.next_u64();
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(filter.contains(&num));
+                black_box(filter.contains(num));
             }
             start.elapsed()
         })
