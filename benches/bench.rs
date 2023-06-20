@@ -12,17 +12,19 @@ mod parquet_impl;
 const NUM_KEYS: usize = 1_000_000;
 const BITS_PER_KEY: usize = 8;
 
+const KEY_RANGE: u64 = 5000;
+
 fn benchmark_insert(c: &mut Criterion) {
     c.bench_function("parquet2 insert", |b| {
         let mut rng = rand::thread_rng();
 
         let mut filter = Filter::new(BITS_PER_KEY, NUM_KEYS);
         for _ in 0..NUM_KEYS {
-            parquet2::bloom_filter::insert(filter.as_mut(), rng.next_u64());
+            filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
         b.iter_custom(|iters| {
-            let num = rng.next_u64();
+            let num = rng.next_u64() % KEY_RANGE;
             let start = Instant::now();
             for _ in 0..iters {
                 black_box(parquet2::bloom_filter::insert(filter.as_mut(), num));
@@ -36,13 +38,12 @@ fn benchmark_insert(c: &mut Criterion) {
 
         let mut filter = Filter::new(BITS_PER_KEY, NUM_KEYS);
         for _ in 0..NUM_KEYS {
-            parquet2::bloom_filter::insert(filter.as_mut(), rng.next_u64());
+            filter.insert(rng.next_u64() % KEY_RANGE);
         }
-
         let mut filter = parquet_impl::Sbbf::new(filter.as_mut());
 
         b.iter_custom(|iters| {
-            let num = rng.next_u64();
+            let num = rng.next_u64() % KEY_RANGE;
             let start = Instant::now();
             for _ in 0..iters {
                 black_box(filter.insert_hash(num));
@@ -56,11 +57,11 @@ fn benchmark_insert(c: &mut Criterion) {
 
         let mut filter = Filter::new(BITS_PER_KEY, NUM_KEYS);
         for _ in 0..NUM_KEYS {
-            filter.insert(rng.next_u64());
+            filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
         b.iter_custom(|iters| {
-            let num = rng.next_u64();
+            let num = rng.next_u64() % KEY_RANGE;
             let start = Instant::now();
             for _ in 0..iters {
                 black_box(filter.insert(num));
@@ -76,11 +77,11 @@ fn benchmark_contains(c: &mut Criterion) {
 
         let mut filter = Filter::new(8, NUM_KEYS);
         for _ in 0..NUM_KEYS {
-            parquet2::bloom_filter::insert(filter.as_mut(), rng.next_u64());
+            filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
         b.iter_custom(|iters| {
-            let num = rng.next_u64();
+            let num = rng.next_u64() % KEY_RANGE;
             let start = Instant::now();
             for _ in 0..iters {
                 black_box(parquet2::bloom_filter::is_in_set(filter.as_mut(), num));
@@ -94,13 +95,13 @@ fn benchmark_contains(c: &mut Criterion) {
 
         let mut filter = Filter::new(BITS_PER_KEY, NUM_KEYS);
         for _ in 0..NUM_KEYS {
-            parquet2::bloom_filter::insert(filter.as_mut(), rng.next_u64());
+            filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
         let filter = parquet_impl::Sbbf::new(filter.as_mut());
 
         b.iter_custom(|iters| {
-            let num = rng.next_u64();
+            let num = rng.next_u64() % KEY_RANGE;
             let start = Instant::now();
             for _ in 0..iters {
                 black_box(filter.check_hash(num));
@@ -114,11 +115,11 @@ fn benchmark_contains(c: &mut Criterion) {
 
         let mut filter = Filter::new(8, NUM_KEYS);
         for _ in 0..NUM_KEYS {
-            filter.insert(rng.next_u64());
+            filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
         b.iter_custom(|iters| {
-            let num = rng.next_u64();
+            let num = rng.next_u64() % KEY_RANGE;
             let start = Instant::now();
             for _ in 0..iters {
                 black_box(filter.contains(num));
