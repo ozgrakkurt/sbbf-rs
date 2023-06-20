@@ -24,6 +24,7 @@ impl FilterFn {
     /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes.
     /// The buffer should have a size of at least `num_buckets` * [BUCKET_SIZE].
     /// `num_buckets` has to be bigger than zero.
+    #[inline(always)]
     pub unsafe fn contains(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool {
         self.inner.contains(buf, num_buckets, hash)
     }
@@ -34,6 +35,7 @@ impl FilterFn {
     /// Caller should make sure the buffer is aligned to [ALIGNMENT] bytes.
     /// The buffer should have a size of at least `num_buckets` * [BUCKET_SIZE].
     /// `num_buckets` has to be bigger than zero.
+    #[inline(always)]
     pub unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
         self.inner.insert(buf, num_buckets, hash)
     }
