@@ -47,9 +47,7 @@ impl FilterImpl for NeonFilter {
 
         let bucket = (vld1q_u32(bucket), vld1q_u32(bucket.add(4)));
 
-        let res = (Self::check(mask.0, bucket.0), Self::check(mask.1, bucket.1));
-
-        res.0 && res.1
+        Self::check(mask.0, bucket.0) && Self::check(mask.1, bucket.1)
     }
     #[target_feature(enable = "neon")]
     #[inline]
@@ -59,12 +57,12 @@ impl FilterImpl for NeonFilter {
         let mask = Self::make_mask(hash as u32);
         let bucket = (buf as *mut u32).add((bucket_idx * 8) as usize);
         let val = (vld1q_u32(bucket), vld1q_u32(bucket.add(4)));
-        let res = (Self::check(mask.0, val.0), Self::check(mask.1, val.1));
+        let res = Self::check(mask.0, val.0) && Self::check(mask.1, val.1);
         let c = (vorrq_u32(val.0, mask.0), vorrq_u32(val.1, mask.1));
         vst1q_u32(bucket, c.0);
         vst1q_u32(bucket.add(4), c.1);
 
-        res.0 && res.1
+        res
     }
     fn which(&self) -> &'static str {
         "NeonFilter"

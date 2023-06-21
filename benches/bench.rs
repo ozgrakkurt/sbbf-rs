@@ -1,19 +1,15 @@
-use std::{
-    alloc::{alloc_zeroed, dealloc, Layout},
-    time::Instant,
-};
+use std::alloc::{alloc_zeroed, dealloc, Layout};
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::RngCore;
 use sbbf_rs::{FilterFn, ALIGNMENT, BUCKET_SIZE};
-use xxhash_rust::xxh3::xxh3_64;
 
 mod parquet_impl;
 
 const NUM_KEYS: usize = 10_000_000;
-const BITS_PER_KEY: usize = 8;
+const BITS_PER_KEY: usize = 16;
 
-const KEY_RANGE: u64 = 500;
+const KEY_RANGE: u64 = 1_000;
 
 fn benchmark_insert(c: &mut Criterion) {
     c.bench_function("parquet2 insert", |b| {
@@ -24,13 +20,12 @@ fn benchmark_insert(c: &mut Criterion) {
             filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
-        b.iter_custom(|iters| {
-            let num = rng.next_u64() % KEY_RANGE;
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(parquet2::bloom_filter::insert(filter.as_mut(), num));
-            }
-            start.elapsed()
+        let num = rng.next_u64();
+        b.iter(|| {
+            black_box({
+                parquet2::bloom_filter::insert(black_box(filter.as_mut()), black_box(num));
+                parquet2::bloom_filter::is_in_set(black_box(filter.as_bytes()), black_box(num))
+            })
         })
     });
 
@@ -43,13 +38,12 @@ fn benchmark_insert(c: &mut Criterion) {
         }
         let mut filter = parquet_impl::Sbbf::new(filter.as_mut());
 
-        b.iter_custom(|iters| {
-            let num = rng.next_u64() % KEY_RANGE;
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(filter.insert_hash(num));
-            }
-            start.elapsed()
+        let num = rng.next_u64();
+        b.iter(|| {
+            black_box({
+                black_box(black_box(&mut filter).insert_hash(black_box(num)));
+                black_box(black_box(&filter).check_hash(black_box(num)));
+            })
         })
     });
 
@@ -61,14 +55,8 @@ fn benchmark_insert(c: &mut Criterion) {
             filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
-        b.iter_custom(|iters| {
-            let num = rng.next_u64() % KEY_RANGE;
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(filter.insert(num));
-            }
-            start.elapsed()
-        })
+        let num = rng.next_u64();
+        b.iter(|| black_box(black_box(black_box(&mut filter).insert(black_box(num)))))
     });
 }
 
@@ -81,14 +69,9 @@ fn benchmark_contains(c: &mut Criterion) {
             filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
-        b.iter_custom(|iters| {
-            let num = rng.next_u64() % KEY_RANGE;
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(parquet2::bloom_filter::is_in_set(filter.as_mut(), num));
-            }
-            start.elapsed()
-        })
+        let num = rng.next_u64();
+
+        b.iter(|| parquet2::bloom_filter::is_in_set(black_box(filter.as_bytes()), black_box(num)))
     });
 
     c.bench_function("parquet contains", |b| {
@@ -101,13 +84,10 @@ fn benchmark_contains(c: &mut Criterion) {
 
         let filter = parquet_impl::Sbbf::new(filter.as_mut());
 
-        b.iter_custom(|iters| {
-            let num = rng.next_u64() % KEY_RANGE;
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(filter.check_hash(num));
-            }
-            start.elapsed()
+        let num = rng.next_u64();
+
+        b.iter(|| {
+            black_box(black_box(&filter).check_hash(black_box(num)));
         })
     });
 
@@ -119,138 +99,15 @@ fn benchmark_contains(c: &mut Criterion) {
             filter.insert(rng.next_u64() % KEY_RANGE);
         }
 
-        b.iter_custom(|iters| {
-            let num = rng.next_u64() % KEY_RANGE;
-            let start = Instant::now();
-            for _ in 0..iters {
-                black_box(filter.contains(num));
-            }
-            start.elapsed()
+        let num = rng.next_u64();
+
+        b.iter(|| {
+            black_box(black_box(&filter).contains(black_box(num)));
         })
     });
 }
 
-fn benchmark_realistic(c: &mut Criterion) {
-    let mut rng = rand::thread_rng();
-
-    let setup_data = (0..NUM_KEYS)
-        .map(|_| {
-            let mut dest = [0; 16];
-            rng.fill_bytes(&mut dest);
-            dest
-        })
-        .collect::<Vec<_>>();
-
-    let bench_data = (0..NUM_KEYS)
-        .map(|i| {
-            let mut dest = [0; 16];
-            if rand::random() {
-                rng.fill_bytes(&mut dest);
-            } else {
-                dest.copy_from_slice(&setup_data[i]);
-            }
-            dest
-        })
-        .collect::<Vec<_>>();
-
-    let make_filter = || {
-        let mut filter = Filter::new(8, NUM_KEYS);
-        for key in setup_data.iter() {
-            filter.insert(xxh3_64(key));
-        }
-
-        filter
-    };
-
-    c.bench_function("parquet2 contains realistic", |b| {
-        let filter = make_filter();
-
-        let mut index = 0;
-
-        b.iter(|| {
-            index = (index + 1) % bench_data.len();
-            let key = bench_data[index];
-            let hash = xxh3_64(&key);
-            black_box(parquet2::bloom_filter::is_in_set(filter.as_bytes(), hash))
-        })
-    });
-
-    c.bench_function("parquet contains realistic", |b| {
-        let filter = make_filter();
-
-        let mut index = 0;
-
-        let filter = parquet_impl::Sbbf::new(filter.as_bytes());
-
-        b.iter(|| {
-            index = (index + 1) % bench_data.len();
-            let key = bench_data[index];
-            let hash = xxh3_64(&key);
-            black_box(filter.check_hash(hash))
-        })
-    });
-
-    c.bench_function("sbbf-rs contains realistic", |b| {
-        let filter = make_filter();
-
-        let mut index = 0;
-
-        b.iter(|| {
-            index = (index + 1) % bench_data.len();
-            let key = bench_data[index];
-            let hash = xxh3_64(&key);
-            black_box(filter.contains(hash))
-        })
-    });
-
-    c.bench_function("parquet2 insert realistic", |b| {
-        let mut filter = make_filter();
-
-        let mut index = 0;
-
-        b.iter(|| {
-            index = (index + 1) % bench_data.len();
-            let key = bench_data[index];
-            let hash = xxh3_64(&key);
-            black_box(parquet2::bloom_filter::insert(filter.as_mut(), hash))
-        })
-    });
-
-    c.bench_function("parquet insert realistic", |b| {
-        let filter = make_filter();
-
-        let mut index = 0;
-
-        let mut filter = parquet_impl::Sbbf::new(filter.as_bytes());
-
-        b.iter(|| {
-            index = (index + 1) % bench_data.len();
-            let key = bench_data[index];
-            let hash = xxh3_64(&key);
-            black_box(filter.insert_hash(hash))
-        })
-    });
-
-    c.bench_function("sbbf-rs insert realistic", |b| {
-        let mut filter = make_filter();
-
-        let mut index = 0;
-
-        b.iter(|| {
-            index = (index + 1) % bench_data.len();
-            let key = bench_data[index];
-            let hash = xxh3_64(&key);
-            black_box(filter.insert(hash))
-        })
-    });
-}
-
-criterion_group!(
-    benches,
-    benchmark_insert,
-    benchmark_contains,
-    benchmark_realistic
-);
+criterion_group!(benches, benchmark_insert, benchmark_contains,);
 criterion_main!(benches);
 
 struct Filter {
