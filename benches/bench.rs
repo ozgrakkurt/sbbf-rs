@@ -41,8 +41,9 @@ fn benchmark_insert(c: &mut Criterion) {
         let num = rng.next_u64();
         b.iter(|| {
             black_box({
+                let res = black_box(black_box(&filter).check_hash(black_box(num)));
                 black_box(black_box(&mut filter).insert_hash(black_box(num)));
-                black_box(black_box(&filter).check_hash(black_box(num)));
+                res
             })
         })
     });
@@ -86,9 +87,7 @@ fn benchmark_contains(c: &mut Criterion) {
 
         let num = rng.next_u64();
 
-        b.iter(|| {
-            black_box(black_box(&filter).check_hash(black_box(num)));
-        })
+        b.iter(|| filter.check_hash(black_box(num)))
     });
 
     c.bench_function("sbbf-rs contains", |b| {
@@ -101,9 +100,7 @@ fn benchmark_contains(c: &mut Criterion) {
 
         let num = rng.next_u64();
 
-        b.iter(|| {
-            black_box(black_box(&filter).contains(black_box(num)));
-        })
+        b.iter(|| filter.contains(black_box(num)))
     });
 }
 
