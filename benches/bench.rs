@@ -22,10 +22,9 @@ fn benchmark_insert(c: &mut Criterion) {
 
         let num = rng.next_u64();
         b.iter(|| {
-            black_box({
-                parquet2::bloom_filter::insert(black_box(filter.as_mut()), black_box(num));
-                parquet2::bloom_filter::is_in_set(black_box(filter.as_bytes()), black_box(num))
-            })
+            let res = parquet2::bloom_filter::is_in_set(black_box(filter.as_bytes()), black_box(num));
+            parquet2::bloom_filter::insert(black_box(filter.as_mut()), black_box(num));
+            res
         })
     });
 
@@ -40,11 +39,9 @@ fn benchmark_insert(c: &mut Criterion) {
 
         let num = rng.next_u64();
         b.iter(|| {
-            black_box({
-                let res = black_box(black_box(&filter).check_hash(black_box(num)));
-                black_box(black_box(&mut filter).insert_hash(black_box(num)));
-                res
-            })
+            let res = black_box(black_box(&filter).check_hash(black_box(num)));
+            black_box(black_box(&mut filter).insert_hash(black_box(num)));
+            res
         })
     });
 
@@ -57,7 +54,7 @@ fn benchmark_insert(c: &mut Criterion) {
         }
 
         let num = rng.next_u64();
-        b.iter(|| black_box(black_box(black_box(&mut filter).insert(black_box(num)))))
+        b.iter(|| filter.insert(black_box(num)))
     });
 }
 
@@ -116,8 +113,8 @@ struct Filter {
 impl Filter {
     #[inline(always)]
     fn new(bits_per_key: usize, num_keys: usize) -> Self {
-        let len = (bits_per_key / 8) * num_keys;
-        let len = ((len + BUCKET_SIZE / 2) / BUCKET_SIZE) * BUCKET_SIZE;
+        let len = bits_per_key * num_keys / 8;
+        let len = ((len + ALIGNMENT / 2) / ALIGNMENT) * ALIGNMENT;
         Self {
             filter_fn: FilterFn::new(),
             buf: Buf::new(len),
