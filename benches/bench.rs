@@ -6,13 +6,14 @@ use std::{
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand::RngCore;
 use sbbf_rs::{FilterFn, ALIGNMENT, BUCKET_SIZE};
+use xxhash_rust::xxh3::xxh3_64;
 
 mod parquet_impl;
 
-const NUM_KEYS: usize = 1_000_000;
+const NUM_KEYS: usize = 10_000_000;
 const BITS_PER_KEY: usize = 8;
 
-const KEY_RANGE: u64 = 5000;
+const KEY_RANGE: u64 = 500;
 
 fn benchmark_insert(c: &mut Criterion) {
     c.bench_function("parquet2 insert", |b| {
@@ -129,7 +130,127 @@ fn benchmark_contains(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, benchmark_insert, benchmark_contains);
+fn benchmark_realistic(c: &mut Criterion) {
+    let mut rng = rand::thread_rng();
+
+    let setup_data = (0..NUM_KEYS)
+        .map(|_| {
+            let mut dest = [0; 16];
+            rng.fill_bytes(&mut dest);
+            dest
+        })
+        .collect::<Vec<_>>();
+
+    let bench_data = (0..NUM_KEYS)
+        .map(|i| {
+            let mut dest = [0; 16];
+            if rand::random() {
+                rng.fill_bytes(&mut dest);
+            } else {
+                dest.copy_from_slice(&setup_data[i]);
+            }
+            dest
+        })
+        .collect::<Vec<_>>();
+
+    let make_filter = || {
+        let mut filter = Filter::new(8, NUM_KEYS);
+        for key in setup_data.iter() {
+            filter.insert(xxh3_64(key));
+        }
+
+        filter
+    };
+
+    c.bench_function("parquet2 contains realistic", |b| {
+        let filter = make_filter();
+
+        let mut index = 0;
+
+        b.iter(|| {
+            index = (index + 1) % bench_data.len();
+            let key = bench_data[index];
+            let hash = xxh3_64(&key);
+            black_box(parquet2::bloom_filter::is_in_set(filter.as_bytes(), hash))
+        })
+    });
+
+    c.bench_function("parquet contains realistic", |b| {
+        let filter = make_filter();
+
+        let mut index = 0;
+
+        let filter = parquet_impl::Sbbf::new(filter.as_bytes());
+
+        b.iter(|| {
+            index = (index + 1) % bench_data.len();
+            let key = bench_data[index];
+            let hash = xxh3_64(&key);
+            black_box(filter.check_hash(hash))
+        })
+    });
+
+    c.bench_function("sbbf-rs contains realistic", |b| {
+        let filter = make_filter();
+
+        let mut index = 0;
+
+        b.iter(|| {
+            index = (index + 1) % bench_data.len();
+            let key = bench_data[index];
+            let hash = xxh3_64(&key);
+            black_box(filter.contains(hash))
+        })
+    });
+
+    c.bench_function("parquet2 insert realistic", |b| {
+        let mut filter = make_filter();
+
+        let mut index = 0;
+
+        b.iter(|| {
+            index = (index + 1) % bench_data.len();
+            let key = bench_data[index];
+            let hash = xxh3_64(&key);
+            black_box(parquet2::bloom_filter::insert(filter.as_mut(), hash))
+        })
+    });
+
+    c.bench_function("parquet insert realistic", |b| {
+        let filter = make_filter();
+
+        let mut index = 0;
+
+        let mut filter = parquet_impl::Sbbf::new(filter.as_bytes());
+
+        b.iter(|| {
+            index = (index + 1) % bench_data.len();
+            let key = bench_data[index];
+            let hash = xxh3_64(&key);
+            black_box(filter.insert_hash(hash))
+        })
+    });
+
+    c.bench_function("sbbf-rs insert realistic", |b| {
+        let mut filter = make_filter();
+
+        let mut index = 0;
+
+        b.iter(|| {
+            index = (index + 1) % bench_data.len();
+            let key = bench_data[index];
+            let hash = xxh3_64(&key);
+            black_box(filter.insert(hash))
+        })
+    });
+}
+
+criterion_group!(
+    benches,
+    benchmark_insert,
+    benchmark_contains,
+    benchmark_realistic
+);
 criterion_main!(benches);
 
 struct Filter {
@@ -166,6 +287,11 @@ impl Filter {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [u8] {
         unsafe { std::slice::from_raw_parts_mut(self.buf.ptr, self.buf.layout.size()) }
+    }
+
+    #[inline(always)]
+    fn as_bytes(&self) -> &[u8] {
+        unsafe { std::slice::from_raw_parts(self.buf.ptr, self.buf.layout.size()) }
     }
 }
 

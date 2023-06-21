@@ -22,3 +22,7 @@ criterion = { version = "0.3", features = ["html_reports"] }
 name = "bench"
 path = "benches/bench.rs"
 harness = false
+
+[profile.release]
+codegen-units = 1
+lto = true

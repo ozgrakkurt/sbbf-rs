@@ -1,7 +1,7 @@
 use super::SALT;
 use core::arch::aarch64::{
     uint32x4_t, vandq_u32, vceqq_u32, vld1q_u32, vminvq_u32, vmulq_u32, vorrq_u32,
-    vreinterpretq_s32_u32, vshlq_u32, vshrq_n_u32,
+    vreinterpretq_s32_u32, vshlq_u32, vshrq_n_u32, vst1q_u32,
 };
 
 use crate::FilterImpl;
@@ -43,9 +43,13 @@ impl FilterImpl for NeonFilter {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = Self::make_mask(hash as u32);
-        let bucket = (buf as *const uint32x4_t).add((bucket_idx * 2) as usize);
+        let bucket = (buf as *const u32).add((bucket_idx * 8) as usize);
 
-        Self::check(mask.0, *bucket) && Self::check(mask.1, *bucket.add(1))
+        let bucket = (vld1q_u32(bucket), vld1q_u32(bucket.add(4)));
+
+        let res = (Self::check(mask.0, bucket.0), Self::check(mask.1, bucket.1));
+
+        res.0 && res.1
     }
     #[target_feature(enable = "neon")]
     #[inline]
@@ -53,11 +57,14 @@ impl FilterImpl for NeonFilter {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = Self::make_mask(hash as u32);
-        let bucket = (buf as *mut uint32x4_t).add((bucket_idx * 2) as usize);
-        let res = Self::check(mask.0, *bucket) && Self::check(mask.1, *bucket.add(1));
-        *bucket = vorrq_u32(*bucket, mask.0);
-        *bucket.add(1) = vorrq_u32(*bucket.add(1), mask.1);
-        res
+        let bucket = (buf as *mut u32).add((bucket_idx * 8) as usize);
+        let val = (vld1q_u32(bucket), vld1q_u32(bucket.add(4)));
+        let res = (Self::check(mask.0, val.0), Self::check(mask.1, val.1));
+        let c = (vorrq_u32(val.0, mask.0), vorrq_u32(val.1, mask.1));
+        vst1q_u32(bucket, c.0);
+        vst1q_u32(bucket.add(4), c.1);
+
+        res.0 && res.1
     }
     fn which(&self) -> &'static str {
         "NeonFilter"
