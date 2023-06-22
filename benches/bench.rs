@@ -22,7 +22,8 @@ fn benchmark_insert(c: &mut Criterion) {
 
         let num = rng.next_u64();
         b.iter(|| {
-            let res = parquet2::bloom_filter::is_in_set(black_box(filter.as_bytes()), black_box(num));
+            let res =
+                parquet2::bloom_filter::is_in_set(black_box(filter.as_bytes()), black_box(num));
             parquet2::bloom_filter::insert(black_box(filter.as_mut()), black_box(num));
             res
         })
