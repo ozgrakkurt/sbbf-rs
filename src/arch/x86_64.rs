@@ -122,3 +122,40 @@ impl FilterImpl for SseFilter {
         "SseFilter"
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::ALIGNMENT;
+    use std::alloc::{alloc_zeroed, dealloc, Layout};
+
+    struct Buf {
+        ptr: *mut u8,
+        layout: Layout,
+    }
+
+    impl Buf {
+        fn new(len: usize) -> Self {
+            let layout = Layout::from_size_align(len, ALIGNMENT).unwrap();
+            let ptr = unsafe { alloc_zeroed(layout) };
+
+            Self { layout, ptr }
+        }
+    }
+
+    impl Drop for Buf {
+        fn drop(&mut self) {
+            unsafe {
+                dealloc(self.ptr, self.layout);
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(target_feature = "sse4.1")]
+    fn smoke_test_sse() {
+        let buf = Buf::new(64);
+
+        assert!(!SseFilter.insert(buf.ptr, 2, 69));
+        assert!(SseFilter.contains(buf.ptr, 2, 64));
+    }
+}

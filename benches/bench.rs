@@ -41,6 +41,7 @@ fn benchmark_insert(c: &mut Criterion) {
         let num = rng.next_u64();
         b.iter(|| {
             let res = black_box(black_box(&filter).check_hash(black_box(num)));
+            #[allow(clippy::unit_arg)]
             black_box(black_box(&mut filter).insert_hash(black_box(num)));
             res
         })
