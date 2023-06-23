@@ -2,8 +2,8 @@ use core::arch::x86_64::{
     __m128i, __m256i, _mm256_load_si256, _mm256_mullo_epi32, _mm256_or_si256, _mm256_set1_epi32,
     _mm256_setr_epi32, _mm256_sllv_epi32, _mm256_srli_epi32, _mm256_store_si256,
     _mm256_testc_si256, _mm_castsi128_ps, _mm_cvtps_epi32, _mm_mullo_epi32, _mm_or_si128,
-    _mm_set1_epi32, _mm_setr_epi32, _mm_slli_epi32, _mm_srli_epi32,
-    _mm_storeu_si128, _mm_testc_si128,
+    _mm_set1_epi32, _mm_setr_epi32, _mm_slli_epi32, _mm_srli_epi32, _mm_storeu_si128,
+    _mm_testc_si128,
 };
 
 use super::SALT;
@@ -14,7 +14,7 @@ pub struct Avx2Filter;
 impl Avx2Filter {
     #[target_feature(enable = "avx2")]
     #[inline]
-    unsafe fn make_mask(&self, hash: u32) -> __m256i {
+    unsafe fn make_mask(hash: u32) -> __m256i {
         let salt = _mm256_setr_epi32(
             SALT[0] as i32,
             SALT[1] as i32,
@@ -38,7 +38,7 @@ impl FilterImpl for Avx2Filter {
     unsafe fn contains(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
-        let mask = self.make_mask(hash as u32);
+        let mask = Self::make_mask(hash as u32);
         let bucket = (buf as *const __m256i).add(bucket_idx as usize);
         _mm256_testc_si256(_mm256_load_si256(bucket), mask) != 0
     }
@@ -47,7 +47,7 @@ impl FilterImpl for Avx2Filter {
     unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
-        let mask = self.make_mask(hash as u32);
+        let mask = Self::make_mask(hash as u32);
         let bucket = (buf as *mut __m256i).add(bucket_idx as usize);
         let val = _mm256_load_si256(bucket);
         let res = _mm256_testc_si256(val, mask) != 0;
@@ -65,7 +65,7 @@ impl SseFilter {
     // taken and adapted from https://stackoverflow.com/questions/57454416/sse-integer-2n-powers-of-2-for-32-bit-integers-without-avx2
     #[target_feature(enable = "sse4.1")]
     #[inline]
-    unsafe fn power_of_two(&self, exp: __m128i) -> __m128i {
+    unsafe fn power_of_two(exp: __m128i) -> __m128i {
         let exp = _mm_set1_epi32(128);
         let f = _mm_castsi128_ps(_mm_slli_epi32(exp, 23));
         return _mm_cvtps_epi32(f);
@@ -73,7 +73,7 @@ impl SseFilter {
 
     #[target_feature(enable = "sse4.1")]
     #[inline]
-    unsafe fn make_mask(&self, hash: u32) -> (__m128i, __m128i) {
+    unsafe fn make_mask(hash: u32) -> (__m128i, __m128i) {
         let salt = (
             _mm_setr_epi32(
                 SALT[0] as i32,
@@ -101,7 +101,7 @@ impl FilterImpl for SseFilter {
     unsafe fn contains(&self, buf: *const u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
-        let mask = self.make_mask(hash as u32);
+        let mask = Self::make_mask(hash as u32);
         let bucket = (buf as *const __m128i).add((bucket_idx * 2) as usize);
         _mm_testc_si128(*bucket, mask.0) != 0 && _mm_testc_si128(*bucket.add(1), mask.1) != 0
     }
@@ -110,7 +110,7 @@ impl FilterImpl for SseFilter {
     unsafe fn insert(&self, buf: *mut u8, num_buckets: usize, hash: u64) -> bool {
         let bucket_idx =
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
-        let mask = self.make_mask(hash as u32);
+        let mask = Self::make_mask(hash as u32);
         let bucket = (buf as *mut __m128i).add((bucket_idx * 2) as usize);
         _mm_storeu_si128(bucket, _mm_or_si128(*bucket, mask.0));
         let res =
