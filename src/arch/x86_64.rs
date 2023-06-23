@@ -125,10 +125,6 @@ impl FilterImpl for SseFilter {
 
 #[cfg(test)]
 mod test {
-    #[cfg(test)]
-    #[macro_use]
-    extern crate std;
-
     use crate::ALIGNMENT;
     use std::alloc::{alloc_zeroed, dealloc, Layout};
 
