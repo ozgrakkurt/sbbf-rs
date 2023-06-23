@@ -153,9 +153,11 @@ mod test {
 
     #[test]
     fn smoke_test_sse() {
-        let buf = Buf::new(64);
+        unsafe {
+            let buf = Buf::new(64);
 
-        assert!(!SseFilter.insert(buf.ptr, 2, 69));
-        assert!(SseFilter.contains(buf.ptr, 2, 64));
+            assert!(!SseFilter.insert(buf.ptr, 2, 69));
+            assert!(SseFilter.contains(buf.ptr, 2, 64));
+        }
     }
 }
