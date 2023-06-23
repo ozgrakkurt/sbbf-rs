@@ -125,7 +125,6 @@ impl FilterImpl for SseFilter {
 
 #[cfg(test)]
 mod test {
-    #[cfg(target_feature = "sse4.1")]
     #[test]
     fn smoke_test_sse() {
         use crate::ALIGNMENT;
