@@ -43,7 +43,9 @@ jobs:
     - name: Test without SIMD
       run: cargo wasi test --release -- --nocapture
     - name: Test with SIMD
-      run: RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
+      run: |
+        rustup install nightly
+        RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
 
   lint:
     strategy:
