@@ -29,6 +29,24 @@ jobs:
     - name: Test
       run: cargo test --release --verbose --workspace
 
+  test_wasm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
+    - name: Install wasmtime
+      run: |
+        curl https://wasmtime.dev/install.sh -sSf | bash
+        echo "$HOME/.wasmtime/bin" >> $GITHUB_PATH
+    - name: Install cargo-wasi
+      run: cargo install cargo-wasi
+    - name: Test without SIMD
+      run: cargo wasi test --release -- --nocapture
+    - name: Test with SIMD
+      run: |
+        rustup install nightly
+        RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
+
   lint:
     strategy:
       matrix:

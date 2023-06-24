@@ -20,3 +20,6 @@ Implementation of [parquet bloom filter spec](https://github.com/apache/parquet-
 - Dynamic dispatch to methods. (Not sure if this will effect performance so much)
 - Most people would want to use this through a safe wrapper that handles allocation and initialization.
 There is example code in `tests/mod.rs` for that kind of wrapper.
+- Unlike other targets, need to do `RUSTFLAGS="-C target-feature=+simd128"` and use nightly if you want to enable SIMD accelerated version
+of filter on `WASM`. If user compiles without enabling `simd128`, they don't need to use nightly and the fallback implementation of a filter
+will be used.
