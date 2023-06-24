@@ -79,6 +79,8 @@ fn run_test(bits_per_key: usize, max_fp: f64) {
 
 #[test]
 fn test_filter() {
+    println!("testing {}", FilterFn::new().which());
+
     run_test(24, 0.0002);
     run_test(16, 0.002);
     run_test(8, 0.02);
