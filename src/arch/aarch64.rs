@@ -18,7 +18,7 @@ impl NeonFilter {
         acc = (vshrq_n_u32(acc.0, 27), vshrq_n_u32(acc.1, 27));
         let ones = vld1q_u32([1, 1, 1, 1].as_ptr());
         (
-            vshlq_u32(ones, vreinterpretq_s32_u32(acc.0)),
+            ones,
             vshlq_u32(ones, vreinterpretq_s32_u32(acc.1)),
         )
     }
