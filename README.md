@@ -1,4 +1,7 @@
 # sbbf-rs
+
+[![CI](https://github.com/ozgrakkurt/sbbf-rs/actions/workflows/ci.yaml/badge.svg?branch=master)](https://github.com/ozgrakkurt/sbbf-rs/actions/workflows/ci.yaml)
+
 <a href="https://crates.io/crates/sbbf-rs">
 	<img src="https://img.shields.io/crates/v/sbbf-rs.svg?style=flat-square"
 	alt="Crates.io version" />
