@@ -28,7 +28,7 @@ jobs:
     - name: Build
       run: cargo build --release
     - name: Test
-      run: cargo test --release
+      run: cargo test --release -- --nocapture
 
   test_wasm:
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
     - name: Build
       run: cargo build --release
     - name: Test
-      run: cargo test --release
+      run: cargo test --release -- --nocapture
 
   lint:
     runs-on: ubuntu-latest
