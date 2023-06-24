@@ -1,6 +1,8 @@
 #[cfg(target_arch = "aarch64")]
 mod aarch64;
 mod fallback;
+#[cfg(all(target_family = "wasm", target_feature = "simd128"))]
+mod wasm;
 #[cfg(target_arch = "x86_64")]
 mod x86_64;
 
@@ -23,7 +25,16 @@ pub(crate) fn load() -> &'static dyn crate::FilterImpl {
     &aarch64::NeonFilter
 }
 
-#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+#[cfg(all(target_family = "wasm", target_feature = "simd128"))]
+pub(crate) fn load() -> &'static dyn crate::FilterImpl {
+    &wasm::WasmFilter
+}
+
+#[cfg(not(any(
+    target_arch = "x86_64",
+    target_arch = "aarch64",
+    all(target_family = "wasm", target_feature = "simd128")
+)))]
 pub(crate) fn load() -> &'static dyn crate::FilterImpl {
     &fallback::FallbackFilter
 }
