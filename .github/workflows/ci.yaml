@@ -57,13 +57,15 @@ jobs:
         id: runtst
         with:
           arch: aarch64
-          distro: ubuntu18.04
+          distro: ubuntu_latest
 
           # Not required, but speeds up builds by storing container images in
           # a GitHub package registry.
           githubToken: ${{ github.token }}
-          
+
           run: |
+            curl https://sh.rustup.rs -sSf | bash -s -- -y
+            echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
             cargo test --release --verbose --workspace
 
   lint:
