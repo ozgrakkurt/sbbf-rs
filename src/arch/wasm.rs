@@ -1,7 +1,7 @@
 use super::SALT;
 use core::arch::wasm::{
-    f32x4_convert_u32x4, u32x4, u32x4_add, u32x4_mul, u32x4_shl, u32x4_shr, u32x4_splat,
-    u32x4_trunc_sat_f32x4, v128, v128_andnot, v128_any_true, v128_or, v128_store,
+    f32x4_convert_i32x4, u32x4, u32x4_add, u32x4_extract_lane, u32x4_mul, u32x4_shl, u32x4_shr,
+    u32x4_splat, u32x4_trunc_sat_f32x4, v128, v128_andnot, v128_any_true, v128_or, v128_store,
 };
 
 use crate::FilterImpl;
@@ -9,11 +9,15 @@ use crate::FilterImpl;
 pub struct WasmFilter;
 
 impl WasmFilter {
+    // TODO: This is pretty terrible, but there doesn't seem to be a way to do it without extracting lanes
     #[inline(always)]
     unsafe fn power_of_two(b: v128) -> v128 {
-        let exp = u32x4_add(b, u32x4_splat(127));
-        let f = f32x4_convert_u32x4(u32x4_shl(exp, 23));
-        u32x4_trunc_sat_f32x4(f)
+        u32x4(
+            1 << u32x4_extract_lane::<0>(b),
+            1 << u32x4_extract_lane::<1>(b),
+            1 << u32x4_extract_lane::<2>(b),
+            1 << u32x4_extract_lane::<3>(b),
+        )
     }
 
     #[inline(always)]
@@ -30,7 +34,7 @@ impl WasmFilter {
 
     #[inline(always)]
     unsafe fn load_v(vals: *const u32) -> v128 {
-        u32x4(*vals.add(3), *vals.add(2), *vals.add(1), *vals.add(0))
+        u32x4(*vals.add(0), *vals.add(1), *vals.add(2), *vals.add(3))
     }
 
     #[inline(always)]
@@ -57,8 +61,11 @@ impl FilterImpl for WasmFilter {
             fastrange_rs::fastrange_32(hash.rotate_left(32) as u32, num_buckets as u32);
         let mask = Self::make_mask(hash as u32);
         let bucket = (buf as *mut u32).add((bucket_idx * 8) as usize);
+
         let val = (Self::load_v(bucket), Self::load_v(bucket.add(4)));
+
         let res = Self::check(mask.0, val.0) && Self::check(mask.1, val.1);
+
         let c = (v128_or(val.0, mask.0), v128_or(val.1, mask.1));
 
         let bucket = bucket as *mut v128;
