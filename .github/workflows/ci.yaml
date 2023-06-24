@@ -49,7 +49,7 @@ jobs:
         RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
 
   test_aarch64:
-    runs-on: buildjet-1vcpu-ubuntu-2204-arm
+    runs-on: buildjet-4vcpu-ubuntu-2204-arm
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
