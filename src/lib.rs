@@ -1,4 +1,8 @@
 #![cfg_attr(not(test), no_std)]
+#![cfg_attr(
+    all(target_family = "wasm", target_feature = "simd128"),
+    feature(simd_wasm64)
+)]
 
 mod arch;
 
