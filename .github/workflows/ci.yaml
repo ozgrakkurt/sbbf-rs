@@ -47,6 +47,25 @@ jobs:
         rustup install nightly
         RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
 
+  test_aarch64:
+    # The host should always be Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: uraimo/run-on-arch-action@v2
+        name: Run Test
+        id: runtst
+        with:
+          arch: aarch64
+          distro: ubuntu18.04
+
+          # Not required, but speeds up builds by storing container images in
+          # a GitHub package registry.
+          githubToken: ${{ github.token }}
+          
+          run: |
+            cargo test --release --verbose --workspace
+
   lint:
     strategy:
       matrix:
