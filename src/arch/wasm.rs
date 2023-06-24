@@ -1,7 +1,7 @@
 use super::SALT;
 use core::arch::wasm::{
-    f32x4_convert_i32x4, u32x4, u32x4_add, u32x4_extract_lane, u32x4_mul, u32x4_shl, u32x4_shr,
-    u32x4_splat, u32x4_trunc_sat_f32x4, v128, v128_andnot, v128_any_true, v128_or, v128_store,
+    u32x4, u32x4_extract_lane, u32x4_mul, u32x4_shr, u32x4_splat, v128, v128_andnot, v128_any_true,
+    v128_or, v128_store,
 };
 
 use crate::FilterImpl;
