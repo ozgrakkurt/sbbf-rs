@@ -35,7 +35,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
     - name: Install wasmtime
-      run: curl https://wasmtime.dev/install.sh -sSf | bash
+      run: curl https://wasmtime.dev/install.sh -sSf | bash && export PATH="$PATH:$HOME/.wasmtime/bin"
     - name: Install cargo-wasi
       run: cargo install cargo-wasi
     - name: Test without SIMD
