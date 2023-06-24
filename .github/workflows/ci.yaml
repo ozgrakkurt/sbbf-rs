@@ -64,7 +64,8 @@ jobs:
           githubToken: ${{ github.token }}
 
           run: |
-            apt install curl
+            apt-get update
+            apt-get install curl
             curl https://sh.rustup.rs -sSf | bash -s -- -y
             echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
             cargo test --release --verbose --workspace
