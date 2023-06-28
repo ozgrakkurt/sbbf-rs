@@ -1,6 +1,6 @@
 [package]
 name = "sbbf-rs"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 license = "MIT"
 description = "Split block bloom filter implementation"
@@ -9,7 +9,7 @@ repository = "https://github.com/ozgrakkurt/sbbf-rs"
 authors = ["Ozgur Akkurt <oezgurmakkurt@gmail.com>"]
 
 [dependencies]
-fastrange-rs = "0.0.4"
+fastrange-rs = "0.1"
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 cpufeatures = "0.2"
