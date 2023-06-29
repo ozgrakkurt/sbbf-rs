@@ -47,7 +47,6 @@ jobs:
 
   test_aarch64:
     runs-on: self-hosted
-    name: Test on ubuntu-18.04 armv7
     steps:
       - uses: actions/checkout@v3
       - uses: uraimo/run-on-arch-action@v2
@@ -66,7 +65,7 @@ jobs:
             cargo test --release -- --nocapture
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
