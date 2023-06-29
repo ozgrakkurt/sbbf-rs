@@ -18,7 +18,7 @@ env:
 
 jobs:
   test_release:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
@@ -28,7 +28,7 @@ jobs:
       run: cargo test --release -- --nocapture
 
   test_wasm:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
@@ -46,7 +46,7 @@ jobs:
         RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
 
   test_aarch64:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: uraimo/run-on-arch-action@v2
@@ -65,7 +65,7 @@ jobs:
             cargo test --release -- --nocapture
 
   lint:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: Swatinem/rust-cache@v2
