@@ -49,15 +49,15 @@ jobs:
         RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
 
   test_aarch64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
+    name: Test on ubuntu-18.04 armv7
     steps:
       - uses: actions/checkout@v3
       - uses: uraimo/run-on-arch-action@v2
-        name: Run commands
-        id: runcmd
+        name: Run tests
         with:
           arch: aarch64
-          distro: ubuntu_latest
+          distro: ubuntu18.04
 
           # Not required, but speeds up builds by storing container images in
           # a GitHub package registry.
