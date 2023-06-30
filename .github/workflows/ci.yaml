@@ -49,16 +49,28 @@ jobs:
         RUSTFLAGS="-C target-feature=+simd128" cargo +nightly wasi test --release -- --nocapture
 
   test_aarch64:
-    runs-on: buildjet-4vcpu-ubuntu-2204-arm
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: Swatinem/rust-cache@v2
-    - name: Update rust
-      run: rustup update
-    - name: Build
-      run: cargo build --release
-    - name: Test
-      run: cargo test --release -- --nocapture
+      - uses: actions/checkout@v3
+      - uses: uraimo/run-on-arch-action@v2
+        name: test_aarch64
+        with:
+          arch: aarch64
+          distro: ubuntu18.04
+
+          # Not required, but speeds up builds
+          githubToken: ${{ github.token }}
+
+          install: |
+            apt-get update
+            apt-get install curl llvm clang -y
+            curl https://sh.rustup.rs -sSf | bash -s -- -y
+
+          run: |
+            source "$HOME/.cargo/env"
+            rustup update
+            cargo build --release
+            cargo test --release -- --nocapture
 
   lint:
     runs-on: ubuntu-latest
