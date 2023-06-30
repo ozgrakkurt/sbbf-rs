@@ -50,6 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: uraimo/run-on-arch-action@v2
+        name: test_aarch64
         with:
           arch: aarch64
           distro: ubuntu18.04
@@ -64,6 +65,7 @@ jobs:
 
           run: |
             source "$HOME/.cargo/env"
+            rustup update
             cargo build --release
             cargo test --release -- --nocapture
 
