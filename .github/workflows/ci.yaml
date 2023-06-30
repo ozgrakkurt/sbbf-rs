@@ -50,7 +50,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: uraimo/run-on-arch-action@v2
-        name: Run tests
         with:
           arch: aarch64
           distro: ubuntu18.04
@@ -62,9 +61,9 @@ jobs:
             apt-get update
             apt-get install curl llvm clang -y
             curl https://sh.rustup.rs -sSf | bash -s -- -y
-            source "$HOME/.cargo/env"
 
           run: |
+            source "$HOME/.cargo/env"
             cargo build --release
             cargo test --release -- --nocapture
 
