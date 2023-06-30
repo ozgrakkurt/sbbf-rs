@@ -55,12 +55,16 @@ jobs:
           arch: aarch64
           distro: ubuntu18.04
 
-          run: |
+          # Not required, but speeds up builds
+          githubToken: ${{ github.token }}
+
+          install: |
             apt-get update
             apt-get install curl llvm clang -y
             curl https://sh.rustup.rs -sSf | bash -s -- -y
             source "$HOME/.cargo/env"
-            rustup update
+
+          run: |
             cargo build --release
             cargo test --release -- --nocapture
 
