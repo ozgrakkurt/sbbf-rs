@@ -37,7 +37,7 @@ jobs:
     - uses: Swatinem/rust-cache@v2
     - name: Setup toolchain
       run: |
-        apt install gcc-multilib
+        sudo apt-get install gcc-multilib -y
         rustup target install i686-unknown-linux-gnu
     - name: Build
       run: cargo build --release --target=i686-unknown-linux-gnu
