@@ -3,18 +3,18 @@ mod aarch64;
 mod fallback;
 #[cfg(all(target_family = "wasm", target_feature = "simd128"))]
 mod wasm;
-#[cfg(target_arch = "x86_64")]
-mod x86_64;
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+mod x86;
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 pub(crate) fn load() -> &'static dyn crate::FilterImpl {
-    cpufeatures::new!(cpuid_av2, "avx2");
+    cpufeatures::new!(cpuid_avx2, "avx2");
     cpufeatures::new!(cpuid_sse, "sse4.1");
 
-    if cpuid_av2::get() {
-        &x86_64::Avx2Filter
+    if cpuid_avx2::get() {
+        &x86::Avx2Filter
     } else if cpuid_sse::get() {
-        &x86_64::SseFilter
+        &x86::SseFilter
     } else {
         &fallback::FallbackFilter
     }
@@ -32,6 +32,7 @@ pub(crate) fn load() -> &'static dyn crate::FilterImpl {
 
 #[cfg(not(any(
     target_arch = "x86_64",
+    target_arch = "x86",
     target_arch = "aarch64",
     all(target_family = "wasm", target_feature = "simd128")
 )))]
@@ -41,6 +42,7 @@ pub(crate) fn load() -> &'static dyn crate::FilterImpl {
 
 #[cfg(any(
     target_arch = "x86_64",
+    target_arch = "x86",
     target_arch = "aarch64",
     all(target_family = "wasm", target_feature = "simd128")
 ))]

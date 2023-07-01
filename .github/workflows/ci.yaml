@@ -30,6 +30,20 @@ jobs:
     - name: Test
       run: cargo test --release -- --nocapture
 
+  test_x86:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
+    - name: Setup toolchain
+      run: |
+        apt install gcc-multilib
+        rustup target install i686-unknown-linux-gnu
+    - name: Build
+      run: cargo build --release --target=i686-unknown-linux-gnu
+    - name: Test
+      run: cargo test --release --target=i686-unknown-linux-gnu -- --nocapture
+
   test_wasm:
     runs-on: ubuntu-latest
     steps:

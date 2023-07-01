@@ -1,3 +1,12 @@
+#[cfg(target_arch = "x86")]
+use core::arch::x86::{
+    __m128i, __m256i, _mm256_load_si256, _mm256_mullo_epi32, _mm256_or_si256, _mm256_set1_epi32,
+    _mm256_setr_epi32, _mm256_sllv_epi32, _mm256_srli_epi32, _mm256_store_si256,
+    _mm256_testc_si256, _mm_add_epi32, _mm_castsi128_ps, _mm_cvtps_epi32, _mm_mullo_epi32,
+    _mm_or_si128, _mm_set1_epi32, _mm_setr_epi32, _mm_slli_epi32, _mm_srli_epi32, _mm_storeu_si128,
+    _mm_testc_si128,
+};
+#[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::{
     __m128i, __m256i, _mm256_load_si256, _mm256_mullo_epi32, _mm256_or_si256, _mm256_set1_epi32,
     _mm256_setr_epi32, _mm256_sllv_epi32, _mm256_srli_epi32, _mm256_store_si256,
